@@ -7,11 +7,17 @@ gem 'rest-client'
 gem 'falcon'
 gem 'colorize'
 
-gem 'rake'
+# gem 'rack', '~> 2.2.8'
+# gem 'rackup', '~> 2.1'
+gem 'rack'
 gem 'rackup'
 
 gem 'grape'
 gem 'grape_logging'
+
+gem 'opentelemetry-sdk'
+gem 'opentelemetry-exporter-otlp'
+gem 'opentelemetry-instrumentation-all'
 
 group :development do
   gem 'rubocop'

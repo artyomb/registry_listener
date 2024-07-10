@@ -25,7 +25,7 @@ LOGGER = Class.new {
           else
             args.map(&:inspect).join(', ')
           end
-    Console.logger.send(name.gsub(/\d/, ''), msg)
+    Console.logger.send(name.to_s.gsub(/\d/, ''), msg)
   end
 }.new
 
