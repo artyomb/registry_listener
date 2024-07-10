@@ -2,4 +2,8 @@ services:
   registry_listener:
     image: ${REGISTRY_HOST}/registry_listener
     build:
-      context: ../registry_listener
+      context: ../listener
+      dockerfile: ../docker/ruby//Dockerfile
+    volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock:rw"
+

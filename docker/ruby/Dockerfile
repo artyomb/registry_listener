@@ -29,13 +29,14 @@ COPY . /app
 
 ENV SERVER_ENV=production \
     RACK_ENV=production \
-    DOCKER_CONTAINER=true
+    DOCKER_CONTAINER=true \
+    PORT=7000
 
 WORKDIR /app
 
 # --start_period=5s (Unknown flag: start_period)
-HEALTHCHECK --interval=15s --timeout=2s --retries=3 CMD curl --fail http://localhost:5050/healthcheck || exit 1
-CMD ls && rackup
+HEALTHCHECK --interval=15s --timeout=2s --retries=3 CMD curl --fail http://localhost:$PORT/healthcheck || exit 1
+CMD ls && bundle exec rackup -o 0.0.0.0 -p $PORT -s falcon
 
 
 # RUN apk update && apk add --no-cache docker-cli
