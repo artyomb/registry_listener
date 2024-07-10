@@ -1,0 +1,18 @@
+source 'https://rubygems.org'
+ruby File.read(File.dirname(__FILE__)+'/.ruby-version').strip
+
+gem 'async-io'
+gem 'json'
+gem 'rest-client'
+gem 'falcon'
+gem 'colorize'
+
+gem 'rake'
+gem 'rackup'
+
+gem 'grape'
+gem 'grape_logging'
+
+group :development do
+  gem 'rubocop'
+end

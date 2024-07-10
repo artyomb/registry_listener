@@ -1,0 +1,5 @@
+services:
+  registry_listener:
+    image: ${REGISTRY_HOST}/registry_listener
+    build:
+      context: ../registry_listener

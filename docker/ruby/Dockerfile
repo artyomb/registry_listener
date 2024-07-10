@@ -1,0 +1,44 @@
+FROM ruby:3.1.2-alpine as base
+
+RUN apk add --update build-base \
+    bash openssh-client git \
+    postgresql-dev libpq libpq-dev \
+    mysql sqlite-dev openssl-dev mariadb-dev \
+    && rm -rf /var/cache/apk/*
+
+RUN echo 'gem: --no-document' >> ~/.gemrc
+RUN gem install ruby-debug-ide bundler --no-document
+
+WORKDIR /app
+
+COPY .ruby-version /app/
+COPY Gemfile* /app/
+RUN bundle install --jobs $(nproc)
+
+FROM ruby:3.1.2-alpine AS deploy
+
+RUN apk add --update docker openrc
+RUN rc-update add docker boot
+
+RUN apk add chromium postgresql-libs bash curl \
+    && rm -rf /var/cache/apk/*
+
+COPY --from=base /usr/local/bundle /usr/local/bundle
+
+COPY . /app
+
+ENV SERVER_ENV=production \
+    RACK_ENV=production \
+    DOCKER_CONTAINER=true
+
+WORKDIR /app
+
+# --start_period=5s (Unknown flag: start_period)
+HEALTHCHECK --interval=15s --timeout=2s --retries=3 CMD curl --fail http://localhost:5050/healthcheck || exit 1
+CMD ls && rackup
+
+
+# RUN apk update && apk add --no-cache docker-cli
+
+#     volumes:
+#      - "/var/run/docker.sock:/var/run/docker.sock:rw"
