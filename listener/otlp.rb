@@ -78,7 +78,6 @@ def otl_def(name)
   define_method(name) do |*args, **kwargs, &block|
     klass = Module === self ? self.name : self.class_name
     otl_span("method: #{klass}.#{name}", {args: args.to_s, kwargs: kwargs.to_s}) do |span|
-      span&.add_attributes({ args:, kwargs: })
       original_method.bind(self).call(*args, **kwargs, &block)
     end
   end
