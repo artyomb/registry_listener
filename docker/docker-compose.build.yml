@@ -1,0 +1,6 @@
+services:
+  registry_listener:
+    image: dtorry/registry_listener
+    build:
+      context: ../listener
+      dockerfile: ../docker/ruby//Dockerfile
