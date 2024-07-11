@@ -3,7 +3,11 @@ services:
     image: ${REGISTRY_HOST}/registry_listener
     build:
       context: ../listener
-      dockerfile: ../docker/ruby//Dockerfile
+      dockerfile: ../docker/ruby/Dockerfile
+      cache_from:
+        - type=gha,scope=registry_listener
+      cache_to:
+        - type=gha,scope=registry_listener,mode=max
     volumes:
     - "/var/run/docker.sock:/var/run/docker.sock:rw"
     environment:

@@ -25,10 +25,12 @@ jobs:
           driver-opts: network=host
       - name: Build and push Docker images
         uses: docker/bake-action@v5
+        env:
+          REGISTRY_HOST: 'dtorry'
         with:
           workdir: ./docker
           files: |
-            docker-compose.build.yml
+            docker-compose.yml
           push: true
 
 
