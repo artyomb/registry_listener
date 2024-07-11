@@ -11,17 +11,15 @@ module RegistryEvent
       stdout, stderr, status = Open3.capture3(command)
       output = stdout.strip
       LOGGER.error "Command failed: #{command}\nOutput: #{output}\nError: #{stderr.strip}" unless status.exitstatus.zero?
-      LOGGER.info "Command: #{command}\nOutput: #{output}\n"
       output
     end
   end
 
-  LOGGER = Logger.new STDOUT
   HOSTS = ENV['DOCKER_HOSTS'].to_s.split ','
   SEMAPHORES = HOSTS.map { |host| [host, Async::Semaphore.new(1)] }.to_h
 
   raise 'DOCKER_HOSTS not set' if HOSTS.empty?
-  # raise 'TELEGRAM TOKEN, CHAT_ID not set' unless ENV['TELEGRAM_BOT_TOKEN'] && ENV['TELEGRAM_CHAT_ID']
+  LOGGER.warn "TELEGRAM TOKEN, CHAT_ID not set" unless ENV['TELEGRAM_BOT_TOKEN'] && ENV['TELEGRAM_CHAT_ID']
 
   CONTEXTS = HOSTS.map do |host|
     ctx = "ctx-#{host.gsub(%r{^ssh://|^unix://}, '').gsub(/[@:.\/]/, '-')}"

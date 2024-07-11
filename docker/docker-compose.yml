@@ -8,4 +8,6 @@ services:
     - "/var/run/docker.sock:/var/run/docker.sock:rw"
     environment:
       DOCKER_HOSTS: unix:///var/run/docker.sock
-
+      OTEL_LOG_LEVEL: debug
+      OTEL_TRACES_EXPORTER: console,otlp
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel.next/
