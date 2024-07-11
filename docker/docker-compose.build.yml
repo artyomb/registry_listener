@@ -4,5 +4,7 @@ services:
     build:
       context: ../listener
       dockerfile: ../docker/ruby//Dockerfile
-      cache-from: type=gha,scope=registry_listener
-      cache-to: type=gha,scope=registry_listener,mode=max
+      cache-from:
+        - type=gha,scope=registry_listener
+      cache-to:
+        - type=gha,scope=registry_listener,mode=max
