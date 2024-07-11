@@ -2,9 +2,7 @@ name: Build and Deploy
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  push: { branches: [main] }
 
 jobs:
   build_service_images:
@@ -17,17 +15,9 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: network=host
       - uses: docker/bake-action@v5
-        env:
-          REGISTRY_HOST: 'dtorry'
+        env: { REGISTRY_HOST: 'dtorry' }
         with:
           workdir: ./docker
-          files: |
-            docker-compose.yml
+          files: docker-compose.yml
           push: true
-
-
-
-
