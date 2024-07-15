@@ -27,12 +27,6 @@ module AsyncTaskOTELPatch
     }
     super parent, finished: , **options, &block_otl
   end
-
-  def wait_all
-    LOGGER.info "wait_all: #{@children&.size}"
-    @children&.each(&:wait_all)
-    wait
-  end
 end
 
 Async::Task.prepend AsyncTaskOTELPatch

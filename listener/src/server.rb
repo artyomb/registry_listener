@@ -14,7 +14,7 @@ otl_def def exec_(command)
   output
 end
 
-UPDATE_PERIOD = (ENV['UPDATE_PERIOD'] || nil) # RegExp 127.0.0.1:5000/my-image:latest
+UPDATE_PERIOD = (ENV['UPDATE_PERIOD'] || 60) # RegExp 127.0.0.1:5000/my-image:latest
 IMAGE_FILTER = Regexp.new(ENV['IMAGE_FILTER'] || "127\.0\.0\.1:5000") # RegExp 127.0.0.1:5000/my-image:latest
 HOSTS = ENV['DOCKER_HOSTS'].to_s.split ',' # unix:///var/run/docker.sock
 raise 'DOCKER_HOSTS not set' if HOSTS.empty?
@@ -33,22 +33,11 @@ class StackManagerApi < Grape::API
   helpers UpdateService
 
   format :json
-  content_type :json, 'application/json'
-  content_type :json, 'text/plain'
+  # content_type :json, 'application/json'
   content_type :json, 'application/vnd.docker.distribution.events.v1+json'
 
   post '/registry_event', &-> { registry_event }
   post '/update_services', &-> { update_services }
 
   get '/healthcheck', &-> {  } # LOGGER.debug :healthcheck
-
-  # def initialize(...)
-  #   Async do
-  #     loop do
-  #       sleep UPDATE_PERIOD.to_i
-  #       update_services
-  #     end
-  #   end if UPDATE_PERIOD
-  #   super
-  # end
 end
