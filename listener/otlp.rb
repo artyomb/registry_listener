@@ -3,6 +3,8 @@ require 'opentelemetry/sdk'
 require 'opentelemetry/exporter/otlp'
 require 'opentelemetry/instrumentation/all'
 require 'opentelemetry-api'
+require 'async'
+require 'grape'
 
 STACK_NAME = ENV['STACK_NAME'] || 'registry_listener'
 SERVICE_NAME = ENV['STACK_SERVICE_NAME'] || 'registry_listener'
@@ -14,6 +16,48 @@ LOGGER.info OTEL_LOG_LEVEL: ENV['OTEL_LOG_LEVEL'],
             SERVICE_NAME: SERVICE_NAME, STACK_NAME: STACK_NAME,
             OTEL_RESOURCE_ATTRIBUTES: ENV['OTEL_RESOURCE_ATTRIBUTES']
 
+module AsyncTaskOTELPatch
+  def initialize(parent = Task.current?, finished: nil, **options, &block)
+    ctx_ = OpenTelemetry::Context.current
+
+    block_otl = ->(t, *arguments){
+      OpenTelemetry::Context.with_current(ctx_) do
+        block.call t, *arguments
+      end
+    }
+    super parent, finished: , **options, &block_otl
+  end
+
+  def wait_all
+    LOGGER.info "wait_all: #{@children&.size}"
+    @children&.each(&:wait_all)
+    wait
+  end
+end
+
+Async::Task.prepend AsyncTaskOTELPatch
+
+def async(name)
+  original_method = self.respond_to?(:instance_method) ? instance_method(name) : method(name)
+  self.respond_to?(:remove_method) ? remove_method(name) : Object.send(:remove_method, name)
+  original_method = original_method.respond_to?(:unbind) ? original_method.unbind : original_method
+
+  define_method(name) do |*args, **kwargs, &block|
+    Async do
+      original_method.bind(self).call(*args, **kwargs, &block)
+    end
+  end
+end
+
+module Enumerable
+  def map_async
+    results = []
+    self.each_with_index.map do |item, index|
+      Async { results[index] = yield(*item.to_ary) }
+    end.map(&:wait)
+    results
+  end
+end
 
 def flatten_hash(hash, path = [], result = {})
   hash.each do |k, v|
@@ -72,23 +116,29 @@ def otl_span(name, attributes = {})
 end
 
 def otl_def(name)
-  original_method = instance_method(name)
-  remove_method(name)
+  original_method = self.respond_to?(:instance_method) ? instance_method(name) : method(name)
+  self.respond_to?(:remove_method) ? remove_method(name) : Object.send(:remove_method, name)
+  original_method = original_method.respond_to?(:unbind) ? original_method.unbind : original_method
 
   define_method(name) do |*args, **kwargs, &block|
-    klass = Module === self ? self.name : self.class_name
+    klass = self.respond_to?(:class_name) ? self.class_name : (self.respond_to?(:name) ? self.name : 'main')
     otl_span("method: #{klass}.#{name}", {args: args.to_s, kwargs: kwargs.to_s}) do |span|
+      LOGGER.info "current_span: #{OpenTelemetry::Trace.current_span}"
+      task = Async::Task.current?
+      LOGGER.info "current_task: #{Async::Task.current?}"
+
       original_method.bind(self).call(*args, **kwargs, &block)
     end
   end
 end
 
-def otl_current_span
-  yield OpenTelemetry::Trace.current_span
-end
+# def otl_current_span
+#   yield OpenTelemetry::Trace.current_span
+# end
 
 if defined?  OpenTelemetry::Instrumentation::Rack::Middlewares
   OpenTelemetry::Instrumentation::Rack::Middlewares::TracerMiddleware.config[:url_quantization] = ->(path, env) {
     "HTTP #{env['REQUEST_METHOD']} #{path}"
   }
 end
+

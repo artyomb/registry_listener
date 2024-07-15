@@ -6,27 +6,6 @@ require 'open3'
 
 module RegistryEvent
   extend self
-  class << self
-    otl_def def exec_(command)
-      stdout, stderr, status = Open3.capture3(command)
-      output = stdout.strip
-      LOGGER.error "Command failed: #{command}\nOutput: #{output}\nError: #{stderr.strip}" unless status.exitstatus.zero?
-      output
-    end
-  end
-
-  HOSTS = ENV['DOCKER_HOSTS'].to_s.split ','
-  SEMAPHORES = HOSTS.map { |host| [host, Async::Semaphore.new(1)] }.to_h
-
-  raise 'DOCKER_HOSTS not set' if HOSTS.empty?
-  LOGGER.warn "TELEGRAM TOKEN, CHAT_ID not set" unless ENV['TELEGRAM_BOT_TOKEN'] && ENV['TELEGRAM_CHAT_ID']
-
-  CONTEXTS = HOSTS.map do |host|
-    ctx = "ctx-#{host.gsub(%r{^ssh://|^unix://}, '').gsub(/[@:.\/]/, '-')}"
-    exec_ "docker context create #{ctx} --docker \"host=#{host}\"" \
-      unless exec_('docker context ls --format {{.Name}}').include? ctx
-    ctx
-  end
 
   otl_def def registry_event(events)
     Async do
@@ -35,14 +14,14 @@ module RegistryEvent
         target = event[:target]
         image = "#{target[:url][%r{(?:http|https)://([^/]+/)}, 1]}#{target[:repository]}:#{target[:tag]}".gsub(/:$/, '')
         next if target[:tag].to_s.empty?
-        CONTEXTS.each { |ctx| update_services ctx, image, target[:digest] }
+        CONTEXTS.each { |ctx| update_services_ ctx, image, target[:digest] }
       end
     end
   end
 
   private
 
-  otl_def def update_services(ctx, image, new_digest)
+  otl_def def update_services_(ctx, image, new_digest)
     services = exec_("docker --context #{ctx} service ls -f label=com.docker.stack.image=#{image.gsub(/:latest$/, '')} --format {{.Name}}").split
     Async do
       services.each do |name|
