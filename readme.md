@@ -16,7 +16,7 @@ TELEGRAM_CHAT_ID
 https://hub.docker.com/r/dtorry/registry_listener
 
 
-# Another service like this: 
+# Another services like this: 
 An overview of various services that enable pull-based deployments, similar to the registry_listener:
 
 ## shepherd
