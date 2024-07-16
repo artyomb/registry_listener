@@ -17,7 +17,7 @@ module UpdateService
   end
 
   async otl_def def update_service(ctx, service_name, image)
-    image_ = image.gsub(/:latest$/, '') # let docker swarm to set tag with sha265
+    image_ = image.strip!.gsub(/:latest$/, '') # let docker swarm to set tag with sha265
     exec_("docker --context #{ctx} service update --force #{service_name} --image #{image_}")
   end
 
