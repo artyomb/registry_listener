@@ -9,7 +9,7 @@ module UpdateService
   UPDATE = Async::Semaphore.new(1)
 
   async otl_def def list_services(ctx)
-    exec_("docker --context #{ctx} service ls --format {{.Name}}\\\|{{.Image}} | grep latest").lines.map{ _1.split('|').map(&:strip) }.to_h
+    exec_("docker --context #{ctx} service ls --format {{.Name}}\\\|{{.Image}} | grep latest").lines.map { _1.split('|').map(&:strip) }.to_h
   end
 
   async otl_def def service_image_digest(ctx, service_name)
@@ -22,7 +22,7 @@ module UpdateService
 
   async otl_def def image_digest(ctx, image)
     pull_response = exec_("docker --context #{ctx} pull #{image}")
-    pull_response = pull_response.lines.map{ _1.scan(/([^:]+):\s*(.*)/).flatten }.to_h
+    pull_response = pull_response.lines.map { _1.scan(/([^:]+):\s*(.*)/).flatten }.to_h
     pull_response['Digest']
   end
 
@@ -35,7 +35,7 @@ module UpdateService
           list_services(ctx).wait.map_async do |name, image|
             next "Skipping: #{image}" unless image =~ IMAGE_FILTER
 
-            latest_digest= image_digest ctx, image
+            latest_digest = image_digest ctx, image
             service_digest = service_image_digest ctx, name
 
             if service_digest.wait != latest_digest.wait
