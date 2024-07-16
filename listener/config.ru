@@ -22,5 +22,3 @@ otel_initialize
 #   # end
 # end
 run StackManagerApi
-
-
