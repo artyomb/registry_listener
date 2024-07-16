@@ -17,8 +17,7 @@ module UpdateService
   end
 
   async otl_def def update_service(ctx, service_name, image)
-    LOGGER.info "Trimmed image name from #{image} to #{image_}"
-    exec_("docker --context #{ctx} service update --force #{service_name} --image #{image_}")
+    exec_("docker --context #{ctx} service update --force #{service_name} --image #{image}")
   end
 
   async otl_def def image_digest(ctx, image)
