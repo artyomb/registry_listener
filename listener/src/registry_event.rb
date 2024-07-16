@@ -2,7 +2,7 @@ require 'rest-client'
 require 'async'
 require 'async/semaphore'
 require 'logger'
-require 'open3'
+
 
 module RegistryEvent
   extend self

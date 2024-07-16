@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 require_relative 'logging'
 require_relative 'otlp'
+require_relative 'helpers'
+require_relative 'config.rb'
 require_relative 'src/server'
 
 # disable logging for Async::IO::Socket, Falcon::Server
