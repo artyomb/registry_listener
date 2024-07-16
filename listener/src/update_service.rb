@@ -26,7 +26,7 @@ module UpdateService
     pull_response['Digest']
   end
 
-  otl_def def update_services()
+  otl_def def update_services(image, digest)
     return 'Update already in progress ...' if @update.blocking?
 
     @update.acquire do
