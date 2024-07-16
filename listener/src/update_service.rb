@@ -35,12 +35,11 @@ module UpdateService
           list_services(ctx).wait.map_async do |name, image|
             next "Skipping: #{image}" unless image =~ IMAGE_FILTER
 
-            latest_digest = image_digest ctx, image
-            service_digest = service_image_digest ctx, name
+            latest_digest, service_digest = [ image_digest( ctx, image), service_image_digest( ctx, name) ].map(&:wait)
 
-            if service_digest.wait != latest_digest.wait
+            if service_digest != latest_digest
               update_service(ctx, name, image).wait
-              "Updating #{name} on #{_host}"
+              "Updating #{name} on #{_host} from #{service_digest} to #{latest_digest}"
             else
               "No update required for #{name} on #{_host}: digest #{service_digest}"
             end
