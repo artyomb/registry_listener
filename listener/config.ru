@@ -11,15 +11,15 @@ Console.logger.enable Class, 3
 
 otel_initialize
 
-Sync do
-  if UPDATE_PERIOD
-    Async do
-      loop do
-        sleep UPDATE_PERIOD.to_i
-        UpdateService.update_services
-      end
-    end
-  end
+# Async do
+#   # if UPDATE_PERIOD
+#   #   Async do
+#   #     loop do
+#   #       sleep UPDATE_PERIOD.to_i
+#   #       UpdateService.update_services
+#   #     end
+#   #   end
+#   # end
+# end
+run StackManagerApi
 
-  run StackManagerApi
-end

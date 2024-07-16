@@ -6,7 +6,7 @@ require 'open3'
 
 module UpdateService
   extend self
-  @update = Async::Semaphore.new(1)
+  UPDATE = Async::Semaphore.new(1)
 
   async otl_def def list_services(ctx)
     exec_("docker --context #{ctx} service ls --format {{.Name}}\\\|{{.Image}} | grep latest").lines.map{ _1.split('|').map(&:strip) }.to_h
@@ -26,10 +26,10 @@ module UpdateService
     pull_response['Digest']
   end
 
-  otl_def def update_services(image, digest)
-    return 'Update already in progress ...' if @update.blocking?
+  otl_def def update_services(image = nil, digest = nil)
+    return 'Update already in progress ...' if UPDATE.blocking?
 
-    @update.acquire do
+    UPDATE.acquire do
       HOSTS.map_async do |ctx, semaphore, _host|
         semaphore.acquire do
           list_services(ctx).wait.map_async do |name, image|
