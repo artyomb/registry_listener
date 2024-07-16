@@ -13,12 +13,11 @@ module UpdateService
   end
 
   async otl_def def service_image_digest(ctx, service_name)
-    exec_("docker --context #{ctx} service inspect --format \"{{.Spec.TaskTemplate.ContainerSpec.Image}}\" #{service_name} | cut -d'@' -f2;").strip
+    exec_("docker --context #{ctx} service inspect --format \"{{.Spec.TaskTemplate.ContainerSpec.Image}}\" #{service_name} | awk -F'@' '{print $2}'").strip
   end
 
   async otl_def def update_service(ctx, service_name, image)
-    image_ = image.gsub(/:latest$/, '') # let docker swarm to set tag with sha265
-    exec_("docker --context #{ctx} service update --force #{service_name} --image #{image_}")
+    exec_("docker --context #{ctx} service update --force #{service_name} --image #{image}")
   end
 
   async otl_def def image_digest(ctx, image)
@@ -37,12 +36,12 @@ module UpdateService
             next "Skipping: #{image}" unless image =~ IMAGE_FILTER
 
             latest_digest, service_digest = [image_digest(ctx, image), service_image_digest(ctx, name)].map(&:wait)
-
             if service_digest != latest_digest
-              update_service(ctx, name, image).wait
-              "Updating #{name} on #{_host} from #{service_digest} to #{latest_digest}"
+              image_with_digest = "#{image}@#{latest_digest}"
+              update_service(ctx, name, image_with_digest).wait
+              "Updating #{name} #{image} on #{_host} to #{image_with_digest}. Previous digest: #{service_digest}"
             else
-              "No update required for #{name} on #{_host}: digest #{service_digest}"
+              "No update required for #{name} #{image} on #{_host}: digest #{service_digest}"
             end
           end
         end
