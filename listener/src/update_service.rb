@@ -21,7 +21,7 @@ module UpdateService
   end
 
   async otl_def def image_digest(ctx, image)
-    pull_response = exec_("docker --context #{ctx} pull #{image}")
+    pull_response = exec_("docker --context #{ctx} pull #{image} --with-registry-auth")
     pull_response = pull_response.lines.map{ _1.scan(/([^:]+):\s*(.*)/).flatten }.to_h
     pull_response['Digest']
   end
