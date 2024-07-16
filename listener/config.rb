@@ -1,5 +1,6 @@
 require 'async/semaphore'
-
+require_relative 'src/config_dsl'
+require 'yaml'
 UPDATE_PERIOD = (ENV['UPDATE_PERIOD'] || 60) # RegExp 127.0.0.1:5000/my-image:latest
 IMAGE_FILTER = Regexp.new(ENV['IMAGE_FILTER'] || "127\.0\.0\.1:5000") # RegExp 127.0.0.1:5000/my-image:latest
 HOSTS = ENV['DOCKER_HOSTS'].to_s.split ',' # unix:///var/run/docker.sock
@@ -16,3 +17,6 @@ HOSTS = HOSTS.map do |host|
   ctx
   [ctx, Async::Semaphore.new(1), host]
 end
+
+CONFIG = ConfigDSL.load "#{__dir__}/listener_config.rb"
+LOGGER.info CONFIG.to_yaml
