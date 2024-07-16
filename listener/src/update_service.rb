@@ -17,7 +17,8 @@ module UpdateService
   end
 
   async otl_def def update_service(ctx, service_name, image)
-    exec_("docker --context #{ctx} service update --force #{service_name} --image #{image}") # --image #{image}
+    image_ = image.gsub(/:latest$/, '') # let docker swarm to set tag with sha265
+    exec_("docker --context #{ctx} service update --force #{service_name} --image #{image_}")
   end
 
   async otl_def def image_digest(ctx, image)
@@ -35,7 +36,7 @@ module UpdateService
           list_services(ctx).wait.map_async do |name, image|
             next "Skipping: #{image}" unless image =~ IMAGE_FILTER
 
-            latest_digest, service_digest = [ image_digest( ctx, image), service_image_digest( ctx, name) ].map(&:wait)
+            latest_digest, service_digest = [image_digest(ctx, image), service_image_digest(ctx, name)].map(&:wait)
 
             if service_digest != latest_digest
               update_service(ctx, name, image).wait
