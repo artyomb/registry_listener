@@ -39,6 +39,7 @@ module UpdateService
             latest_digest, service_digest = [image_digest(ctx, image), service_image_digest(ctx, name)].map(&:wait)
 
             if service_digest != latest_digest
+              LOGGER.info "Updating #{name} #{image}"
               update_service(ctx, name, image).wait
               "Updating #{name} on #{_host} from #{service_digest} to #{latest_digest}"
             else
