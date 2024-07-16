@@ -1,4 +1,3 @@
-
 require 'opentelemetry/sdk'
 require 'opentelemetry/exporter/otlp'
 require 'opentelemetry/instrumentation/all'
@@ -41,7 +40,7 @@ def flatten_hash(hash, path = [], result = {})
   result
 end
 
-# OpenTelemetry.logger = LOGGER
+OpenTelemetry.logger = LOGGER
 def otel_initialize
   OpenTelemetry::SDK.configure do |c|
     c.service_name = SERVICE_NAME
@@ -76,6 +75,11 @@ def otel_initialize
     # span.status = OpenTelemetry::Trace::Status.error("error message here!")
   end
 
+  if defined?  OpenTelemetry::Instrumentation::Rack::Middlewares
+    OpenTelemetry::Instrumentation::Rack::Middlewares::TracerMiddleware.config[:url_quantization] = ->(path, env) {
+      "HTTP #{env['REQUEST_METHOD']} #{path}"
+    }
+  end
 end
 
 def otl_span(name, attributes = {})
@@ -95,10 +99,6 @@ def otl_def(name)
   define_method(name) do |*args, **kwargs, &block|
     klass = self.respond_to?(:class_name) ? self.class_name : (self.respond_to?(:name) ? self.name : 'main')
     otl_span("method: #{klass}.#{name}", {args: args.to_s, kwargs: kwargs.to_s}) do |span|
-      # LOGGER.info "current_span: #{OpenTelemetry::Trace.current_span}"
-      task = Async::Task.current?
-      # LOGGER.info "current_task: #{Async::Task.current?}"
-
       original_method.bind(self).call(*args, **kwargs, &block)
     end
   end
@@ -107,10 +107,4 @@ end
 # def otl_current_span
 #   yield OpenTelemetry::Trace.current_span
 # end
-
-if defined?  OpenTelemetry::Instrumentation::Rack::Middlewares
-  OpenTelemetry::Instrumentation::Rack::Middlewares::TracerMiddleware.config[:url_quantization] = ->(path, env) {
-    "HTTP #{env['REQUEST_METHOD']} #{path}"
-  }
-end
 

@@ -19,11 +19,19 @@ module AsyncWarmup
           sleep UPDATE_PERIOD.to_i
           UpdateService.update_services
         end
-    end if @parent.is_a? Async::Reactor
+    end if @parent.is_a? Async::Reactor # root task
   end
 end
 
 Async::Task.prepend AsyncWarmup
+
+if defined? OpenTelemetry::Instrumentation::Rack::Middlewares::TracerMiddleware
+  use OpenTelemetry::Instrumentation::Rack::Middlewares::TracerMiddleware
+end
+
+# warmup do
+#   @options[:debug] = true
+# end
 
 run StackManagerApi
 
