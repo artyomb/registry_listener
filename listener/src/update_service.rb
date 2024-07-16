@@ -43,7 +43,7 @@ module UpdateService
               update_service(ctx, name, image).wait
               "Updating #{name} #{image} on #{_host} from #{service_digest} to #{latest_digest}"
             else
-              "No update required for #{name} on #{_host}: digest #{service_digest}"
+              "No update required for #{name} #{image} on #{_host}: digest #{service_digest}"
             end
           end
         end
