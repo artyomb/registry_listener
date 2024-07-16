@@ -11,15 +11,18 @@ Console.logger.enable Class, 3
 
 otel_initialize
 
-# Async do
-#   # if UPDATE_PERIOD
-#   #   Async do
-#   #     loop do
-#   #       sleep UPDATE_PERIOD.to_i
-#   #       UpdateService.update_services
-#   #     end
-#   #   end
-#   # end
-# end
-run StackManagerApi
+module AsyncWarmup
+  def initialize(...)
+    super(...)
+    self.async do
+        loop do
+          sleep UPDATE_PERIOD.to_i
+          UpdateService.update_services
+        end
+    end if @parent.is_a? Async::Reactor
+  end
+end
 
+Async::Task.prepend AsyncWarmup
+
+run StackManagerApi
