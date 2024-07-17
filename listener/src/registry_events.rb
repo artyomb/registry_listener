@@ -8,10 +8,11 @@ module RegistryEvents
     host =~ /[.:]/ ? [host, path.join('/')] : [nil, image_string]
   end
 
-  otl_def def push_to_registry(to, image)
+  otl_def def push_to_registry(to, image, auth)
     _, short_image = split_image_string image
     to_ = to.gsub %r{/$}, ''
-
+    login, password = auth.split(':')
+    exec_ "docker login #{to_} -u #{login} -p #{password}"
     exec_ "docker pull #{image}"
     exec_ "docker tag #{image} #{to_}/#{short_image}"
     exec_ "docker push #{to_}/#{short_image}"
@@ -31,7 +32,7 @@ module RegistryEvents
         next unless image =~ on_push[:image] # regexp
 
         on_push[:Push].map_async do |push|
-          push_to_registry push[:to], image
+          push_to_registry push[:to], image, push[:auth]
         end
 
         on_push[:UpdateServices].map_async do |update|
