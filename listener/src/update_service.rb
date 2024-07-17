@@ -25,7 +25,7 @@ module UpdateService
   end
 
   otl_def def update_services(image = nil, digest = nil)
-    return 'Update already in progress ...' if UPDATE.blocking?
+    return 'Update already in progress ...' if UPDATE.blocking? && !image
 
     UPDATE.acquire do
       HOSTS.map_async do |ctx, semaphore, _host|
