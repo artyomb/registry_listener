@@ -27,9 +27,11 @@ end
 
 module Enumerable
   def map_async
-    results = []
+    results = Array.new(self.size)
     self.each_with_index.map do |item, index|
-      Async { results[index] = yield(*item.to_ary) }
+      Async do
+        results[index] = item.respond_to?(:to_ary) ? yield(*item.to_ary) : yield(item)
+      end
     end.map(&:wait)
     results
   end
