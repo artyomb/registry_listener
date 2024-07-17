@@ -4,8 +4,8 @@ module RegistryEvents
   extend self
 
   def split_image_string(image_string)
-    host, path = image_string.split('/', 2)
-    path ? [host, path] : [nil, host]
+    host, *path = image_string.split('/')
+    host =~ /[.:]/ ? [host, path.join('/')] : [nil, image_string]
   end
 
   otl_def def push_to_registry(to, image)
