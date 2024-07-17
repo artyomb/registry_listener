@@ -28,19 +28,20 @@ module RegistryEvents
 
       next if target[:tag].to_s.empty?
 
-      CONFIG[:OnPush].map_async do |on_push|
+      CONFIG[:OnPush]&.map_async do |on_push|
         next unless image =~ on_push[:image] # regexp
 
-        on_push[:Push].map_async do |push|
+        on_push[:Push]&.map_async do |push|
           push_to_registry push[:to], image, push[:auth]
-        end
 
-        on_push[:UpdateServices].map_async do |update|
-          if update[:endpoint] == :local
-            UpdateService.update_services image, nil # digest
-          else
-            RestClient.post update[:endpoint], { image:, target: }.to_json, content_type: :json, accept: :json
+          push[:UpdateServices]&.map_async do |update|
+            if update[:endpoint] == :local
+              UpdateService.update_services image, nil # digest
+            else
+              RestClient.post update[:endpoint], { image:, target: }.to_json, content_type: :json, accept: :json
+            end
           end
+
         end
       end
     end
