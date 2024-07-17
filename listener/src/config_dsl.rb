@@ -15,6 +15,6 @@ module ConfigDSL
 
   def OnPush(args, &) = collect(__method__, args, &)
   def Push(args, &) = collect(__method__, args, &)
-  def UpdateServices(endpoint, args, &) = collect(__method__, args.merge(endpoint:), &)
+  def UpdateServices(endpoint, args = {}, &) = collect(__method__, args.merge(endpoint:), &)
 
 end

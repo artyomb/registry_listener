@@ -1,5 +1,5 @@
 # Pull-based deployments
-default values for the variables:
+Default values for the variables:
 
 UPDATE_PERIOD=60
 
