@@ -35,10 +35,12 @@ module RegistryEvents
           push_to_registry push[:to], image, push[:auth]
 
           push[:UpdateServices]&.map_async do |update|
+            _, short_image = split_image_string image
+
             if update[:endpoint] == :local
-              UpdateService.update_services image, nil # digest
+              UpdateService.update_services short_image, event[:digest]
             else
-              RestClient.post update[:endpoint], { image:, target: }.to_json, content_type: :json, accept: :json
+              RestClient.post update[:endpoint], { image: short_image, digest: event[:digest] }.to_json, content_type: :json, accept: :json
             end
           end
 
