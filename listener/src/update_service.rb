@@ -7,7 +7,7 @@ module UpdateService
   UPDATE = Async::Semaphore.new(1)
 
   async otl_def def list_services(ctx)
-    exec_("docker --context #{ctx} service ls --format {{.Name}}\\\|{{.Image}} | grep latest").lines.map { _1.split('|').map(&:strip) }.to_h
+    exec_("docker --context #{ctx} service ls --format {{.Name}}\\\|{{.Image}}").lines.map { _1.split('|').map(&:strip) }.to_h
   end
 
   async otl_def def service_image_digest(ctx, service_name)
