@@ -18,7 +18,7 @@ module RegistryEvents
     exec_ "docker push #{to_}/#{short_image}"
   end
 
-  otl_def def on_registry_events(events)
+  async otl_def def on_registry_events(events)
     events.each.map_async do |event|
       next unless event[:action] == 'push'
       LOGGER.info event
