@@ -15,7 +15,13 @@ module UpdateService
   end
 
   async otl_def def update_service(ctx, service_name, image)
-    exec_("docker --context #{ctx} service update --force #{service_name} --image #{image}")
+    exec_("docker --context #{ctx} service update --force #{service_name} --image #{image}") do |output, exitstatus|
+      if exitstatus.zero?
+        notify "Service converged: #{service_name}, image: #{image}"
+      else
+        notify "Failed update service: #{service_name}, image: #{image}"
+      end
+    end
   end
 
   async otl_def def image_digest(ctx, image)

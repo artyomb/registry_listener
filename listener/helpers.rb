@@ -5,6 +5,8 @@ require 'open3'
 otl_def def exec_(command)
   stdout, stderr, status = Open3.capture3(command)
   output = stdout.strip
+  yield output, status.exitstatus if block_given?
+
   unless status.exitstatus.zero?
     LOGGER.error "Command failed: #{command}\nOutput: #{output}\nError: #{stderr.strip}"
     raise "Command failed: #{command}\nOutput: #{output}\nError: #{stderr.strip}"

@@ -16,6 +16,8 @@ module RegistryEvents
     exec_ "docker pull #{image}"
     exec_ "docker tag #{image} #{to_}/#{short_image}"
     exec_ "docker push #{to_}/#{short_image}"
+
+    notify "Image re-pushed to: #{to_}/#{short_image}"
   end
 
   async otl_def def on_registry_events(events)
@@ -30,6 +32,7 @@ module RegistryEvents
 
       CONFIG[:OnPush]&.map_async do |on_push|
         next unless image =~ on_push[:image] # regexp
+        notify "New image pushed: #{image}"
 
         on_push[:Push]&.map_async do |push|
           push_to_registry push[:to], image, push[:auth]
