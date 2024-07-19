@@ -12,12 +12,12 @@ module CheckServices
   end
 
   otl_def def check_services
-    HOSTS.map_async do |ctx, semaphore, _host|
+    HOSTS.map_async do |ctx, semaphore, _host, c_name|
       semaphore.acquire do
-        result = get_services_status(ctx)
+        result = get_services_status ctx
         otl_current_span { _1.add_attributes "result-#{ctx}" => result }
 
-        notify "Service status:\n#{result}" unless result.empty?
+        notify "Service status #{c_name}:\n#{result}" unless result.empty?
       end
     end
   end

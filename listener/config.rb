@@ -13,8 +13,8 @@ HOSTS = HOSTS.map do |host|
   ctx = "ctx-#{host.gsub(%r{^ssh://|^unix://}, '').gsub(/[@:.\/]/, '-')}"
   exec_ "docker context create #{ctx} --docker \"host=#{host}\"" \
     unless exec_('docker context ls --format {{.Name}}').include? ctx
-  ctx
-  [ctx, Async::Semaphore.new(1), host]
+  name = exec_ %(docker --context #{ctx} info | grep Name | sed ' s/Name: //')
+  [ctx, Async::Semaphore.new(1), host, name]
 end
 
 CONFIG = ConfigDSL.load "#{__dir__}/listener_config.rb"

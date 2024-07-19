@@ -14,14 +14,14 @@ module UpdateService
     exec_("docker --context #{ctx} service inspect --format \"{{.Spec.TaskTemplate.ContainerSpec.Image}}\" #{service_name} | awk -F'@' '{print $2}'").strip
   end
 
-  async otl_def def update_service(ctx, service_name, image)
-    notify "Self update: \n#{image}" if image =~ /dtorry\/registry_listener/ && ctx == 'ctx--var-run-docker-sock'
+  async otl_def def update_service(ctx, c_name, service_name, image)
+    notify "Self update #{c_name}: \n#{image}" if image =~ /dtorry\/registry_listener/ && ctx == 'ctx--var-run-docker-sock'
 
     exec_("docker --context #{ctx} service update --force #{service_name} --image #{image}") do |output, exitstatus|
       if exitstatus.zero?
-        notify "Service converged: #{service_name}, image: #{image}"
+        notify "Service converged #{c_name}: #{service_name}, image: #{image}"
       else
-        notify "Failed update service: #{service_name}, image: #{image}"
+        notify "Failed update service #{c_name}: #{service_name}, image: #{image}"
       end
     end
   end
@@ -40,11 +40,11 @@ module UpdateService
       UPDATE.acquire do
         span.add_event('start updating', attributes: { event: 'Success',message: 'Get data from elastic Success'}.transform_keys(&:to_s) )
 
-        HOSTS.map_async do |ctx, semaphore, _host|
+        HOSTS.map_async do |ctx, semaphore, _host, c_name|
           semaphore.acquire do
             list_services(ctx).wait.map_async do |name, service_image|
               if update_image
-                next "Skipping(update_image): #{service_image}" unless service_image =~ /#{update_image}/
+                next "Skipping(update_image) #{c_name}: #{service_image}" unless service_image =~ /#{update_image}/
               else
                 next "Skipping: #{service_image}" unless service_image =~ IMAGE_FILTER
               end
@@ -52,10 +52,10 @@ module UpdateService
               latest_digest, service_digest = [image_digest(ctx, service_image), service_image_digest(ctx, name)].map(&:wait)
               if service_digest != latest_digest
                 image_with_digest = "#{service_image}@#{latest_digest}"
-                update_service(ctx, name, image_with_digest).wait
-                "Updating #{name} #{service_image} on #{_host} to #{image_with_digest}. Previous digest: #{service_digest}"
+                update_service(ctx, c_name, name, image_with_digest).wait
+                "Updating #{c_name}: #{name} #{service_image} on #{_host} to #{image_with_digest}. Previous digest: #{service_digest}"
               else
-                "No update required for #{name} #{service_image} on #{_host}: digest #{service_digest}"
+                "No update required for #{c_name}: #{name} #{service_image} on #{_host}: digest #{service_digest}"
               end
             end
           end
