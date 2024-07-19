@@ -11,7 +11,6 @@ module CheckServices
                   done}
   end
 
-
   otl_def def check_services
     HOSTS.map_async do |ctx, semaphore, _host|
       semaphore.acquire do
