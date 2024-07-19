@@ -15,7 +15,7 @@ module UpdateService
   end
 
   async otl_def def update_service(ctx, service_name, image)
-    notify "Self update: \n#{image}" if image =~ /drorry\/registry_listener/ && ctx == 'ctx--var-run-docker-sock'
+    notify "Self update: \n#{image}" if image =~ /dtorry\/registry_listener/ && ctx == 'ctx--var-run-docker-sock'
 
     exec_("docker --context #{ctx} service update --force #{service_name} --image #{image}") do |output, exitstatus|
       if exitstatus.zero?
