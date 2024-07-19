@@ -20,6 +20,10 @@ module AsyncWarmup
           otl_span :periodic_update do
             UpdateService.update_services
           end rescue 'ok'
+
+          otl_span :periodic_check do
+            CheckServices.check_services
+          end rescue 'ok'
         end
     end if @parent.is_a? Async::Reactor # root task
   end

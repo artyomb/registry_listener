@@ -104,7 +104,17 @@ def otl_def(name)
   end
 end
 
-# def otl_current_span
-#   yield OpenTelemetry::Trace.current_span
-# end
+def otl_current_span
+  yield OpenTelemetry::Trace.current_span
+end
+
+class OpenTelemetry::SDK::Trace::Span
+  alias add_attributes_old add_attributes
+
+  def add_attributes(attributes)
+    add_attributes_old flatten_hash attributes
+                                    .transform_keys(&:to_s)
+                                    .transform_values{_1 || 'n/a' }
+  end
+end
 
