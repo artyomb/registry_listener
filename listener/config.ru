@@ -16,8 +16,8 @@ module AsyncWarmup
     super(...)
     self.async do
         loop do
+          sleep UPDATE_PERIOD.to_i
           otl_span :periodic_update do
-            sleep UPDATE_PERIOD.to_i
             UpdateService.update_services
           end rescue 'ok'
         end
