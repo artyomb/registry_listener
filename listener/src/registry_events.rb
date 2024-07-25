@@ -11,8 +11,10 @@ module RegistryEvents
   otl_def def push_to_registry(to, image, auth)
     _, short_image = split_image_string image
     to_ = to.gsub %r{/$}, ''
-    login, password = auth.split(':')
-    exec_ "docker login #{to_} -u #{login} -p #{password}"
+    if auth
+      login, password = auth.split(':')
+      exec_ "docker login #{to_} -u #{login} -p #{password}"
+    end
     exec_ "docker pull #{image}"
     exec_ "docker tag #{image} #{to_}/#{short_image}"
     exec_ "docker push #{to_}/#{short_image}"
