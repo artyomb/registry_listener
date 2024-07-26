@@ -17,6 +17,5 @@ HOSTS = HOSTS.map do |host|
   [ctx, Async::Semaphore.new(1), host, name]
 end
 
-
 CONFIG = ConfigDSL.load "#{__dir__}/listener_config.rb"
 LOGGER.info CONFIG.to_yaml

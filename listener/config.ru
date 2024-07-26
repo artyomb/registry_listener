@@ -14,7 +14,15 @@ otel_initialize
 module AsyncWarmup
   def initialize(...)
     super(...)
-    self.async do
+    if @parent.is_a? Async::Reactor # root task
+      self.async do
+        loop do
+          sleep 10
+          notify(nil) rescue 'ok' # send messages in the queue
+        end
+      end
+
+      self.async do
         loop do
           sleep UPDATE_PERIOD.to_i
           otl_span :periodic_update do
@@ -25,7 +33,8 @@ module AsyncWarmup
             CheckServices.check_services
           end rescue 'ok'
         end
-    end if @parent.is_a? Async::Reactor # root task
+      end
+    end
   end
 end
 

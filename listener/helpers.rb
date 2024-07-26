@@ -39,7 +39,22 @@ module Enumerable
   end
 end
 
-otl_def def notify(message)
+$notify_queue = []
+$notify_start_time = nil
+
+def notify(message)
+  if $notify_start_time && Time.now - $notify_start_time > 10
+    notify_bulk $notify_queue.compact.join '<br/>' if $notify_queue.compact.size > 0
+    $notify_queue = []
+    $notify_start_time = nil
+  elsif message
+    $notify_queue << message
+    $notify_start_time ||= Time.now
+  end
+end
+
+
+otl_def def notify_bulk(message)
   return unless ENV['TELEGRAM_BOT_TOKEN'] && ENV['TELEGRAM_CHAT_ID']
   RestClient.post \
     "https://api.telegram.org/bot#{ENV['TELEGRAM_BOT_TOKEN']}/sendMessage",
