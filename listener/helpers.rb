@@ -43,7 +43,7 @@ $notify_queue = []
 $notify_task = nil
 
 def notify(message)
-  $notify_queue << message
+  $notify_queue << message unless message.nil?
   $notify_task&.stop
   $notify_task = Async do
     sleep 2
@@ -53,12 +53,12 @@ def notify(message)
       b_message += '<br/>' + $notify_queue.pop
     end
     notify_bulk b_message unless b_message.empty?
+    Async { notify nil } unless $notify_queue.empty?
   end
 end
 
 otl_def def notify_bulk(message)
   return unless ENV['TELEGRAM_BOT_TOKEN'] && ENV['TELEGRAM_CHAT_ID']
-  LOGGER.info "Sending notification: #{message}"
   RestClient.post \
     "https://api.telegram.org/bot#{ENV['TELEGRAM_BOT_TOKEN']}/sendMessage",
     { chat_id: ENV['TELEGRAM_CHAT_ID'], text: message, parse_mode: 'HTML' }.to_json,
