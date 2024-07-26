@@ -1,5 +1,5 @@
 ENV['CONSOLE_LEVEL'] ||= 'all'
-TRACE_METHODS = false
+TRACE_METHODS = true
 LOG_DEPTH = (ENV['LOG_DEPTH'] || 10).to_i
 ENV['CONSOLE_OUTPUT'] = 'XTerm'
 ENV['CONSOLE_FATAL'] = 'Async::IO::Socket'

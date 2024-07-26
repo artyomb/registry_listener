@@ -54,6 +54,7 @@ end
 
 otl_def def notify_bulk(message)
   return unless ENV['TELEGRAM_BOT_TOKEN'] && ENV['TELEGRAM_CHAT_ID']
+  LOGGER.info "Sending notification: #{message}"
   RestClient.post \
     "https://api.telegram.org/bot#{ENV['TELEGRAM_BOT_TOKEN']}/sendMessage",
     { chat_id: ENV['TELEGRAM_CHAT_ID'], text: message, parse_mode: 'HTML' }.to_json,
