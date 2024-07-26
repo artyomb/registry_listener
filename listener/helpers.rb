@@ -47,8 +47,12 @@ def notify(message)
   $notify_task&.stop
   $notify_task = Async do
     sleep 2
-    notify_bulk $notify_queue.compact.join '<br/>' if $notify_queue.compact.size > 0
-    $notify_queue = []
+    b_message = ''
+    until $notify_queue.empty?
+      break if $notify_queue.first.size + '<br/>'.size + b_message.size >= 4096
+      b_message += '<br/>' + $notify_queue.pop
+    end
+    notify_bulk b_message unless b_message.empty?
   end
 end
 
