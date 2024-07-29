@@ -17,7 +17,7 @@ module UpdateService
   async otl_def def update_service(ctx, c_name, service_name, image)
     notify "Self update #{c_name}: \n#{image}" if image =~ /dtorry\/registry_listener/ && ctx == 'ctx--var-run-docker-sock'
 
-    exec_("docker --context #{ctx} service update --force #{service_name} --image #{image}") do |output, exitstatus|
+    exec_("docker --context #{ctx} service update --force #{service_name} --image #{image} --with-registry-auth") do |output, exitstatus|
       if exitstatus.zero?
         notify "Service converged #{c_name}: #{service_name}, image: #{image}"
       else
