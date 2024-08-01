@@ -49,7 +49,7 @@ def notify(message)
     sleep 2
     b_message = ''
     until $notify_queue.empty?
-      break if $notify_queue.first.size + '<br/>'.size + b_message.size >= 2048
+      break if $notify_queue.first.size + "\n".size + b_message.size >= 4096
       b_message += "\n" unless b_message.empty?
       b_message += $notify_queue.shift
     end
