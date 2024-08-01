@@ -69,11 +69,11 @@ module UpdateService
               else
                 next "Skipping: #{service_image}" unless service_image =~ IMAGE_FILTER
               end
-              task_names = list_service_tasks(ctx, name).wait
-              task_names.each do |task_name|
-                digest = get_task_image_digest(ctx, task_name).wait
-                p "#{c_name}: #{name} #{service_image} on #{_host} digest: #{digest}"
-              end
+              # task_names = list_service_tasks(ctx, name).wait
+              # task_names.each do |task_name|
+              #   digest = get_task_image_digest(ctx, task_name).wait
+              #   p "#{c_name}: #{name} #{service_image} on #{_host} digest: #{digest}"
+              # end
 
               latest_digest, service_digest = [image_digest(ctx, service_image), service_image_digest(ctx, name)].map(&:wait)
               if service_digest != latest_digest
