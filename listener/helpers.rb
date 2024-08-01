@@ -65,5 +65,5 @@ otl_def def notify_bulk(message)
     { chat_id: ENV['TELEGRAM_CHAT_ID'], text: message, parse_mode: 'HTML' }.to_json,
     content_type: :json, accept: :json
 rescue => e
-  LOGGER.error "Notification failed: #{e.message}"
+  LOGGER.error "Notification failed: #{e.message}, (response: #{e.response rescue 'n/a'})"
 end
