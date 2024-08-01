@@ -50,7 +50,8 @@ def notify(message)
     b_message = ''
     until $notify_queue.empty?
       break if $notify_queue.first.size + '<br/>'.size + b_message.size >= 2048
-      b_message += '<br/>' + $notify_queue.pop
+      b_message += '\n' if b_message.empty?
+      b_message += $notify_queue.pop
     end
     notify_bulk b_message unless b_message.empty?
     Async { notify nil } unless $notify_queue.empty?
@@ -59,14 +60,10 @@ end
 
 otl_def def notify_bulk(message)
   return unless ENV['TELEGRAM_BOT_TOKEN'] && ENV['TELEGRAM_CHAT_ID']
-  LOGGER.info message
-  LOGGER.info "https://api.telegram.org/bot#{ENV['TELEGRAM_BOT_TOKEN']}/sendMessage"
-  LOGGER.info ENV['TELEGRAM_CHAT_ID']
   RestClient.post \
     "https://api.telegram.org/bot#{ENV['TELEGRAM_BOT_TOKEN']}/sendMessage",
     { chat_id: ENV['TELEGRAM_CHAT_ID'], text: message, parse_mode: 'HTML' }.to_json,
     content_type: :json, accept: :json
 rescue => e
   LOGGER.error "Notification failed: #{e.message}"
-  LOGGER.error "Notification error: #{e}"
 end
