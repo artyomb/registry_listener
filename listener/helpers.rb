@@ -59,11 +59,14 @@ end
 
 otl_def def notify_bulk(message)
   return unless ENV['TELEGRAM_BOT_TOKEN'] && ENV['TELEGRAM_CHAT_ID']
+  Logger.info message
+
   response = RestClient.post \
     "https://api.telegram.org/bot#{ENV['TELEGRAM_BOT_TOKEN']}/sendMessage",
     { chat_id: ENV['TELEGRAM_CHAT_ID'], text: message, parse_mode: 'HTML' }.to_json,
     content_type: :json, accept: :json
 rescue => e
   LOGGER.error "Notification failed: #{e.message}"
+  LOGGER.error "Notification error: #{e}"
   LOGGER.error "Response: #{response.body}" if response
 end
