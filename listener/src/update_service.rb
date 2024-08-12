@@ -39,7 +39,7 @@ module UpdateService
     notify "Self update #{c_name}: \n#{image}" if image =~ /dtorry\/registry_listener/ && ctx == 'ctx--var-run-docker-sock'
 
     exec_("docker --context #{ctx} service update --force #{service_name} --image #{image} --with-registry-auth") do |output, exitstatus|
-      if exitstatus.zero?
+      if exitstatus.zero? && output !~ /rollback/
         notify "Service converged #{c_name}: #{service_name}, image: #{image}"
       else
         notify "Failed update service #{c_name}: #{service_name}, image: #{image}"
