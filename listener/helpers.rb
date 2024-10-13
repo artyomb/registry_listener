@@ -29,13 +29,11 @@ end
 
 module Enumerable
   def map_async
-    results = Array.new(self.size)
-    self.each_with_index.map do |item, index|
+    self.map do |item|
       Async do
-        results[index] = item.respond_to?(:to_ary) ? yield(*item.to_ary) : yield(item)
+        item.respond_to?(:to_ary) ? yield(*item.to_ary) : yield(item)
       end
     end.map(&:wait)
-    results
   end
 end
 

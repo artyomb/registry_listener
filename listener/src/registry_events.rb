@@ -32,24 +32,31 @@ module RegistryEvents
 
       next if target[:tag].to_s.empty?
 
+      updater = lambda { |update|
+        _, short_image = split_image_string image
+
+        if update[:endpoint] == :local
+          UpdateService.update_services short_image, event[:digest]
+        else
+          RestClient.post update[:endpoint], { image: short_image, digest: event[:digest] }.to_json, content_type: :json, accept: :json
+        end
+      }
+
+
       CONFIG[:OnPush]&.map_async do |on_push|
         next unless image =~ on_push[:image] # regexp
+
         notify "New image pushed: #{image}"
 
-        on_push[:Push]&.map_async do |push|
-          push_to_registry push[:to], image, push[:auth]
-
-          push[:UpdateServices]&.map_async do |update|
-            _, short_image = split_image_string image
-
-            if update[:endpoint] == :local
-              UpdateService.update_services short_image, event[:digest]
-            else
-              RestClient.post update[:endpoint], { image: short_image, digest: event[:digest] }.to_json, content_type: :json, accept: :json
-            end
-          end
-
-        end
+        [Async {
+           on_push[:UpdateServices]&.map_async(&updater)
+         },
+         Async {
+           on_push[:Push]&.map_async do |push|
+             push_to_registry push[:to], image, push[:auth]
+             push[:UpdateServices]&.map_async(&updater)
+           end
+         }].map(&:wait)
       end
     end
   end

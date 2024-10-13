@@ -22,6 +22,17 @@ module AsyncWarmup
         end
       end
 
+      CONFIG[:OnTime]&.each do |on_time|
+        self.async do
+          loop do
+            sleep (on_time[:minutes] || 10) * 60
+            otl_span :on_time do
+              on_time[:block].call
+            end
+          end
+        end
+      end
+
       self.async do
         loop do
           sleep UPDATE_PERIOD.to_i
