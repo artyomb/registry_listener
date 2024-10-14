@@ -7,14 +7,14 @@ module ConfigDSL
     @path.last
   end
   def collect(name, args, &block)
-    (@path.last[name] ||= []) << args.merge( block: )
+    (@path.last[name] ||= []) << args
     @path.push args
     yield if block_given?
     @path.pop
   end
 
   def OnPush(args, &) = collect(__method__, args, &)
-  def OnTime(args, &) = collect(__method__, args, &)
+  def OnTime(args, &block) = collect(__method__, args.merge( block:))
   def Push(args, &) = collect(__method__, args, &)
   def UpdateServices(endpoint, args = {}, &) = collect(__method__, args.merge(endpoint:), &)
 
