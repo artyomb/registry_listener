@@ -50,11 +50,15 @@ module RegistryEvents
 
         [Async {
            on_push[:UpdateServices]&.map_async(&updater)
+           notify "task1: #{image}"
          },
          Async {
            on_push[:Push]&.map_async do |push|
+             notify "task2.0: to: #{push[:to]}, image: #{image}, auth: #{push[:auth]}"
              push_to_registry push[:to], image, push[:auth]
+             notify "task2.1: #{image}"
              push[:UpdateServices]&.map_async(&updater)
+             notify "task2.2: #{image}"
            end
          }].map(&:wait)
       end
