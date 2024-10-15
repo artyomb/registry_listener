@@ -6,6 +6,9 @@ OnPush image: %r{.*project_a/.*} do
 end
 
 OnTime minutes: 10 do
-  output = exec_ 'docker image prune -f'
-  notify output
+  output = []
+  output << 'Hostname: ' + exec_( "curl -s --unix-socket /var/run/docker.sock http://localhost/info | jq -r '.Name'")
+  output << '<example config>'
+  # output << exec_('docker image prune -f')
+  notify(output.join("\n")) # unless output.last =~ /Total\s+reclaimed\s+space:\s+0B/m
 end
