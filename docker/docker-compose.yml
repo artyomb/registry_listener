@@ -10,6 +10,8 @@ services:
         - type=gha,scope=registry_listener,mode=max
     volumes:
     - "/var/run/docker.sock:/var/run/docker.sock:rw"
+    ports:
+      - 7000:7000
     environment:
       DOCKER_HOSTS: unix:///var/run/docker.sock
       OTEL_LOG_LEVEL: debug
