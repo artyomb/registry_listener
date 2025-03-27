@@ -11,7 +11,9 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with: { ruby-version: 3.3.2 }
       - run: gem install build-labels
-      - run: env && cd docker && build-labels -n -c docker-compose.yml $(if [ "${GITHUB_REF##*/}" = "release" ]; then echo "set_version"; fi) to_dockerfiles to_compose | tee bake.yml
+      - run: env && cd docker && build-labels -n -c docker-compose.yml $(if [ "${GITHUB_REF##*/}" = "release" ]; then echo "--full-version"; fi) set_version to_dockerfiles to_compose | tee bake.yml
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
       - uses: docker/bake-action@v5
         env: { REGISTRY_HOST: 'dtorry' }
         with: { workdir: ./docker, files: bake.yml, push: true }
