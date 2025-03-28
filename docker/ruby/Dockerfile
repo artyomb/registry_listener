@@ -10,7 +10,8 @@ RUN echo 'gem: --no-document' >> ~/.gemrc
 WORKDIR /app
 
 COPY .ruby-version Gemfile* /app/
-RUN bundle install --jobs $(nproc)
+RUN bundle install --jobs $(nproc) --retry=3 && \
+    bundle clean --force && rm -rf /usr/local/bundle/cache/*
 
 FROM ruby:3.3.1-alpine AS deploy
 
