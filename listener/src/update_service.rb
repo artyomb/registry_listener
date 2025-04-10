@@ -103,7 +103,7 @@ module UpdateService
 
               latest_digest = pull_image_digest(ctx, service_image).wait
 
-              if c_digests.include? latest_digest
+              if c_digests.empty? || c_digests.include?(latest_digest)
                 "No update required for #{c_name}: #{name} #{service_image} on #{_host}: digest #{c_digests}"
               else
                 update_service(ctx, c_name, name, service_image).wait
