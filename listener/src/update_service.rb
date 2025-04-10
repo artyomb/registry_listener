@@ -14,6 +14,7 @@ require 'open3'
 # docker task image sha
 # docker container inspect $(docker inspect 1uu75an0sp169tkgezslmi9dn | jq -r .[0].Status.ContainerStatus.ContainerID) | jq -r .[0].Image
 
+$containers_cache = {}
 
 module UpdateService
   extend self
@@ -29,6 +30,26 @@ module UpdateService
 
   async otl_def def list_services(ctx)
     exec_("docker --context #{ctx} service ls --format {{.Name}}\\\|{{.Image}}").lines.map { _1.split('|').map(&:strip) }.to_h
+  end
+
+  async otl_def def list_containers(ctx)
+    # containers = JSON exec_ %{docker --context #{ctx} ps -q | xargs -n1 docker inspect | jq -s 'map(.[0] | {ID: .Id, Name: .Name, ConfigImage: .Config.Image, Image: .Image})'}
+    containers = JSON exec_ %(docker --context #{ctx} ps --format '{"ID":"{{.ID}}","Name":"{{.Names}}","Image":"{{.Image}}"}' | jq -s)
+
+    ids = containers.map { _1['ID'] }
+    $containers_cache.select! {|k,v| ids.include? k } # delete obsolete containers
+
+    containers.each do |c|
+      $containers_cache[c['ID']] ||= begin
+        JSON exec_ %(docker --context #{ctx} inspect #{c['ID']} | jq -r .[0] )
+      end
+
+      $containers_cache[c['ID']][:ImageRepoDigests] ||= begin
+        image = JSON exec_ %(docker --context #{ctx} image inspect #{c['Image']} | jq -r .[0])
+        image['RepoDigests'][0][/sha256:.{64}/]
+      end
+    end
+    $containers_cache
   end
 
   async otl_def def service_image_digest(ctx, service_name)
@@ -47,7 +68,7 @@ module UpdateService
     end
   end
 
-  async otl_def def image_digest(ctx, image)
+  async otl_def def pull_image_digest(ctx, image)
     pull_response = exec_("docker --context #{ctx} pull #{image}")
     pull_response = pull_response.lines.map { _1.scan(/([^:]+):\s*(.*)/).flatten }.to_h
     pull_response['Digest']
@@ -59,11 +80,16 @@ module UpdateService
     otl_span :update_services, attributes: {update_image:, update_digest:} do |span|
 
       UPDATE.acquire do
-        span.add_event('start updating', attributes: { event: 'Success',message: 'Get data from elastic Success'}.transform_keys(&:to_s) )
+        span.add_event('start updating', attributes: { event: 'Success', message: 'Get data from elastic Success'}.transform_keys(&:to_s) )
 
         HOSTS.map_async do |ctx, semaphore, _host, c_name|
           semaphore.acquire do
-            list_services(ctx).wait.map_async do |name, service_image|
+            containers, services = [list_containers(ctx), list_services(ctx)].map(&:wait)
+
+            services.map_async do |name, service_image|
+              c_list = containers.values.select { _1['Name'] =~ /^\/#{name}/ }
+              c_digests = c_list.map { _1[:ImageRepoDigests] }
+
               if update_image
                 next "Skipping(update_image) #{c_name}: #{service_image}" unless service_image =~ /#{update_image}/
               else
@@ -75,13 +101,13 @@ module UpdateService
               #   p "#{c_name}: #{name} #{service_image} on #{_host} digest: #{digest}"
               # end
 
-              latest_digest, service_digest = [image_digest(ctx, service_image), service_image_digest(ctx, name)].map(&:wait)
-              if service_digest != latest_digest
-                image_with_digest = "#{service_image}@#{latest_digest}"
-                update_service(ctx, c_name, name, image_with_digest).wait
-                "Updating #{c_name}: #{name} #{service_image} on #{_host} to #{image_with_digest}. Previous digest: #{service_digest}"
+              latest_digest = pull_image_digest(ctx, service_image).wait
+
+              if c_digests.include? latest_digest
+                "No update required for #{c_name}: #{name} #{service_image} on #{_host}: digest #{c_digests}"
               else
-                "No update required for #{c_name}: #{name} #{service_image} on #{_host}: digest #{service_digest}"
+                update_service(ctx, c_name, name, service_image).wait
+                "Updating #{c_name}: #{name} #{service_image} on #{_host} to #{c_digests}. Previous digest: #{c_digests}"
               end
             end
           end
