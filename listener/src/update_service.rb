@@ -49,7 +49,7 @@ module UpdateService
       if $containers_cache[c['ID']]
         $containers_cache[c['ID']][:ImageRepoDigests] ||= begin
           image = JSON exec_ %(docker --context #{ctx} image inspect #{$containers_cache[c['ID']]['Image']} | jq -r .[0])
-          image['RepoDigests'][0][/sha256:.{64}/]
+          image['RepoDigests']&.first&.slice(/sha256:.{64}/)
         end
       end
     end
@@ -92,7 +92,7 @@ module UpdateService
 
             services.map_async do |name, service_image|
               c_list = containers.values.select { _1['Name'] =~ /^\/#{name}/ }
-              c_digests = c_list.map { _1[:ImageRepoDigests] }
+              c_digests = c_list.map { _1[:ImageRepoDigests] }.compact
 
               if update_image
                 next "Skipping(update_image) #{c_name}: #{service_image}" unless service_image =~ /#{update_image}/
