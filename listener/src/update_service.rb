@@ -48,7 +48,7 @@ module UpdateService
 
       if $containers_cache[c['ID']]
         $containers_cache[c['ID']][:ImageRepoDigests] ||= begin
-          image = JSON exec_ %(docker --context #{ctx} image inspect #{c['Image']} | jq -r .[0])
+          image = JSON exec_ %(docker --context #{ctx} image inspect #{$containers_cache[c['ID']]['Image']} | jq -r .[0])
           image['RepoDigests'][0][/sha256:.{64}/]
         end
       end
