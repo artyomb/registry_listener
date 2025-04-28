@@ -1,24 +1,23 @@
-FROM ruby:3.3.1-alpine as base
+FROM ruby:3.3.1-slim-bookworm AS base
 
-RUN apk add --update build-base \
-    bash openssh-client git \
-    postgresql-dev libpq libpq-dev \
-    mysql sqlite-dev openssl-dev mariadb-dev \
-    && rm -rf /var/cache/apk/*
+RUN apt update && apt --fix-missing install -y build-essential pkg-config bash curl libpq-dev openssh-client \
+     libpq-dev libsqlite3-dev libssl-dev libgeos-dev docker.io jq\
+     && rm -rf /var/lib/apt/lists/*
 
 RUN echo 'gem: --no-document' >> ~/.gemrc
+
 WORKDIR /app
 
 COPY .ruby-version Gemfile* /app/
 RUN bundle install --jobs $(nproc) --retry=3 && \
     bundle clean --force && rm -rf /usr/local/bundle/cache/*
 
-FROM ruby:3.3.1-alpine AS deploy
-
-RUN apk add docker-cli openssh-client bash curl jq && rm -rf /var/cache/apk/*
+FROM ruby:3.3.1-slim-bookworm AS deploy
+RUN apt update && apt install --fix-missing -y bash curl libpq-dev openssh-client \
+      libpq-dev sqlite3 libssl-dev libgeos-dev docker.io jq\
+     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=base /usr/local/bundle /usr/local/bundle
-
 COPY . /app
 
 ENV SERVER_ENV=production \

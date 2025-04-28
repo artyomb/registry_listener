@@ -42,9 +42,7 @@ module UpdateService
     containers.each do |c|
       otl_current_span { _1.add_event('inspect container', attributes: { event: 'Success', message: "C_Name: #{c['Name']}, C_ID:#{c['ID']}"}.transform_keys(&:to_s) ) }
 
-      $containers_cache[c['ID']] ||= begin
-        JSON exec_ %(docker --context #{ctx} inspect #{c['ID']} | jq -r .[0] )
-      end
+      $containers_cache[c['ID']] ||= JSON exec_ %(docker --context #{ctx} inspect #{c['ID']} | jq -r .[0] )
 
       if $containers_cache[c['ID']]
         $containers_cache[c['ID']][:ImageRepoDigests] ||= begin
