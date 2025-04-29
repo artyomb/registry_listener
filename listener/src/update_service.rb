@@ -51,6 +51,7 @@ module UpdateService
         end
       end
     end
+    LOGGER.info "List containers done: containers: #{containers.size}, $containers_cache: #{$containers_cache.size}"
     $containers_cache
   end
 
@@ -87,8 +88,11 @@ module UpdateService
         HOSTS.map_async do |ctx, semaphore, _host, c_name|
           semaphore.acquire do
             containers, services = [list_containers(ctx), list_services(ctx)].map(&:wait)
+            LOGGER.info "Update acquire: Containers: #{containers.size}, services: #{services.size}"
 
             services.map_async do |name, service_image|
+              LOGGER.info "Update #{c_name}: #{name}, image: #{service_image}"
+
               c_list = containers.values.select { _1['Name'] =~ /^\/#{name}/ }
               c_digests = c_list.map { _1[:ImageRepoDigests] }.flatten
 
@@ -105,9 +109,13 @@ module UpdateService
 
               latest_digest = pull_image_digest(ctx, service_image).wait
 
+              LOGGER.info "Latest digest: #{latest_digest}"
+
               if c_digests.empty? || c_digests.include?(latest_digest)
+                LOGGER.info "No update required for #{c_name}: #{name} #{service_image} on #{_host}: digest #{c_digests}"
                 "No update required for #{c_name}: #{name} #{service_image} on #{_host}: digest #{c_digests}"
               else
+                LOGGER.info "Updating #{c_name}: #{name} #{service_image} on #{_host} to #{latest_digest}. Previous digest: #{c_digests}"
                 update_service(ctx, c_name, name, service_image).wait
                 "Updating #{c_name}: #{name} #{service_image} on #{_host} to #{c_digests}. Previous digest: #{c_digests}"
               end
