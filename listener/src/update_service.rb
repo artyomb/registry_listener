@@ -39,7 +39,11 @@ module UpdateService
     ids = containers.map { _1['ID'] }
     $containers_cache.select! {|k,v| ids.include? k } # delete obsolete containers
 
-    containers.each do |c|
+    LOGGER.info "List containers in: containers: #{containers.size}, $containers_cache: #{$containers_cache.size}"
+
+    containers.each_with_index do |c, index|
+      LOGGER.info "containers: #{index}/#{containers.size} #{c['ID']} #{c['Name']}"
+
       otl_current_span { _1.add_event('inspect container', attributes: { event: 'Success', message: "C_Name: #{c['Name']}, C_ID:#{c['ID']}"}.transform_keys(&:to_s) ) }
 
       $containers_cache[c['ID']] ||= JSON exec_ %(docker --context #{ctx} inspect #{c['ID']} | jq -r .[0] )
