@@ -4,6 +4,9 @@ require_relative 'otlp'
 require_relative 'helpers'
 require_relative 'config.rb'
 require_relative 'src/server'
+require 'stack-service-base'
+
+StackServiceBase.rack_setup self
 
 # disable logging for Async::IO::Socket, Falcon::Server
 Console.logger.enable Class, 3

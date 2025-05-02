@@ -322,6 +322,8 @@ GEM
     process-metrics (0.2.1)
       console (~> 1.8)
       samovar (~> 2.1)
+    prometheus-client (4.2.4)
+      base64
     protocol-hpack (1.4.3)
     protocol-http (0.26.8)
     protocol-http1 (0.19.1)
@@ -365,6 +367,8 @@ GEM
     samovar (2.3.0)
       console (~> 1.0)
       mapping (~> 1.0)
+    stack-service-base (0.0.2)
+      prometheus-client
     strscan (3.1.0)
     traces (0.11.1)
     tzinfo (2.0.6)
@@ -390,6 +394,7 @@ DEPENDENCIES
   rackup
   rest-client
   rubocop
+  stack-service-base
 
 RUBY VERSION
    ruby 3.3.1p55
