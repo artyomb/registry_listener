@@ -81,6 +81,21 @@ module UpdateService
     pull_response['Digest']
   end
 
+  async otl_def def hub_image_digest(image)
+    repo, tag = image.split(':')
+    tag = 'latest' unless tag && !tag.empty?
+
+    # Only check Docker Hub images. Images on other registries have a '.' in the name.
+    return nil if repo.include?('.')
+
+    # Official images (e.g., 'ubuntu') don't have a '/' and are in the 'library' namespace.
+    full_repo = repo.include?('/') ? repo : "library/#{repo}"
+
+    command = "curl -k -s 'https://hub.docker.com/v2/repositories/#{full_repo}/tags/#{tag}/' | jq -r '.digest'"
+    digest = exec_(command).strip
+    digest.empty? ? nil : digest
+  end
+
   otl_def def update_services(update_image = nil, update_digest = nil)
     return 'Update already in progress ...' if UPDATE.blocking? && !update_image
 
@@ -111,7 +126,8 @@ module UpdateService
               #   p "#{c_name}: #{name} #{service_image} on #{_host} digest: #{digest}"
               # end
 
-              latest_digest = pull_image_digest(ctx, service_image).wait
+              # latest_digest = pull_image_digest(ctx, service_image).wait
+              latest_digest = hub_image_digest(service_image).wait
 
               LOGGER.info "Latest digest: #{latest_digest}"
 
