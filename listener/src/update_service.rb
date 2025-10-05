@@ -86,7 +86,7 @@ module UpdateService
     tag = 'latest' unless tag && !tag.empty?
 
     # Only check Docker Hub images. Images on other registries have a '.' in the name.
-    return nil if repo.include?('.')
+    return nil if repo.split('/')[0].include?('.')
 
     # Official images (e.g., 'ubuntu') don't have a '/' and are in the 'library' namespace.
     full_repo = repo.include?('/') ? repo : "library/#{repo}"
@@ -95,8 +95,13 @@ module UpdateService
 
     manifest = exec_ "curl -k -s 'https://hub.docker.com/v2/repositories/#{full_repo}/tags/#{tag}/'"
     manifest = JSON manifest, symbolize_names: true
-    digest =  manifest[:digest] || manifest[:images].find { |i| i[:architecture] == 'amd64' }[:digest]
-    digest&.empty? || digest == 'null' ? nil : digest
+
+    # Can't get digest from manifest.list
+    # only for application/vnd.docker.container.image.v1+json
+    return nil if manifest[:media_type] == "application/vnd.docker.distribution.manifest.list.v2+json"
+
+    digest =  manifest[:digest] || manifest[:images].find { |i| i[:architecture] == 'amd64' }[:digest] rescue nil
+    digest.to_s =~ /sha256:.{64}/ ? digest : nil
   end
 
   otl_def def update_services(update_image = nil, update_digest = nil)
@@ -129,7 +134,7 @@ module UpdateService
               #   p "#{c_name}: #{name} #{service_image} on #{_host} digest: #{digest}"
               # end
 
-              latest_digest = hub_image_digest(service_image).wait
+              latest_digest = hub_image_digest(service_image).wait rescue nil
               latest_digest ||= pull_image_digest(ctx, service_image).wait
 
               LOGGER.info "Latest digest: #{latest_digest}"
