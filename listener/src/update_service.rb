@@ -126,8 +126,8 @@ module UpdateService
               #   p "#{c_name}: #{name} #{service_image} on #{_host} digest: #{digest}"
               # end
 
-              # latest_digest = pull_image_digest(ctx, service_image).wait
               latest_digest = hub_image_digest(service_image).wait
+              latest_digest ||= pull_image_digest(ctx, service_image).wait
 
               LOGGER.info "Latest digest: #{latest_digest}"
 
