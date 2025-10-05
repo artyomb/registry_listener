@@ -91,9 +91,12 @@ module UpdateService
     # Official images (e.g., 'ubuntu') don't have a '/' and are in the 'library' namespace.
     full_repo = repo.include?('/') ? repo : "library/#{repo}"
 
-    command = "curl -k -s 'https://hub.docker.com/v2/repositories/#{full_repo}/tags/#{tag}/' | jq -r '.digest'"
-    digest = exec_(command).strip
-    digest.empty? ? nil : digest
+    puts "https://hub.docker.com/v2/repositories/#{full_repo}/tags/#{tag}/"
+
+    manifest = exec_ "curl -k -s 'https://hub.docker.com/v2/repositories/#{full_repo}/tags/#{tag}/'"
+    manifest = JSON manifest, symbolize_names: true
+    digest =  manifest[:digest] || manifest[:images].find { |i| i[:architecture] == 'amd64' }[:digest]
+    digest&.empty? || digest == 'null' ? nil : digest
   end
 
   otl_def def update_services(update_image = nil, update_digest = nil)
