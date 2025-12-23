@@ -81,6 +81,14 @@ module UpdateService
     pull_response['Digest']
   end
 
+  async otl_def def manifest_image_digest(ctx, image)
+    manifests = JSON.parse `docker --context #{ctx} manifest inspect --verbose #{image}`
+    manifest = manifests.find do |m|
+      m['Descriptor']['platform']['os'] == 'linux' && m['Descriptor']['platform']['architecture'] == 'amd64'
+    end
+    manifest['Descriptor']['digest'] if manifest
+  end
+
   async otl_def def hub_image_digest(image)
     repo, tag = image.split(':')
     tag = 'latest' unless tag && !tag.empty?
@@ -134,7 +142,8 @@ module UpdateService
               #   p "#{c_name}: #{name} #{service_image} on #{_host} digest: #{digest}"
               # end
 
-              latest_digest = hub_image_digest(service_image).wait rescue nil
+              # latest_digest = hub_image_digest(service_image).wait rescue nil
+              # latest_digest ||= manifest_image_digest(ctx, service_image).wait rescue nil
               latest_digest ||= pull_image_digest(ctx, service_image).wait
 
               LOGGER.info "Latest digest: #{latest_digest}"
