@@ -13,9 +13,22 @@ RUN bundle install --jobs $(nproc) --retry=3 && \
     bundle clean --force && rm -rf /usr/local/bundle/cache/*
 
 FROM ruby:3.3.1-slim-bookworm AS deploy
-RUN apt update && apt install --fix-missing -y bash curl openssh-client \
-       libssl-dev docker.io jq\
+RUN apt update && apt install --fix-missing -y bash curl libpq-dev openssh-client libyaml-0-2 procps\
+      libssl-dev jq libjson-c5 libwebsockets-dev \
      && rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+    apt update; apt install -y --no-install-recommends ca-certificates curl; \
+    install -m 0755 -d /etc/apt/keyrings; \
+    curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc; \
+    chmod a+r /etc/apt/keyrings/docker.asc; \
+    . /etc/os-release; \
+    printf "Types: deb\nURIs: https://download.docker.com/linux/debian\nSuites: %s\nComponents: stable\nSigned-By: /etc/apt/keyrings/docker.asc\n" "$VERSION_CODENAME" \
+      > /etc/apt/sources.list.d/docker.sources; \
+    apt update; apt install -y --no-install-recommends docker-ce-cli; \
+    rm -rf /var/lib/apt/lists/*
+
+RUN docker -v
 
 COPY --from=base /usr/local/bundle /usr/local/bundle
 COPY . /app
