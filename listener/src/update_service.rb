@@ -156,6 +156,9 @@ module UpdateService
                 update_service(ctx, c_name, name, service_image).wait
                 "Updating #{c_name}: #{name} #{service_image} on #{_host} to #{c_digests}. Previous digest: #{c_digests}"
               end
+            rescue => e
+              LOGGER.info 'Service update failed', e
+              "Service update failed: #{e.message}"
             end
           end
         end.flatten
