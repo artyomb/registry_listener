@@ -33,8 +33,8 @@ module UpdateService
   end
 
   async otl_def def list_containers(ctx)
-    # containers = JSON exec_ %{docker --context #{ctx} ps -q | xargs -n1 docker inspect | jq -s 'map(.[0] | {ID: .Id, Name: .Name, ConfigImage: .Config.Image, Image: .Image})'}
-    containers = JSON exec_ %(docker --context #{ctx} ps --format '{"ID":"{{.ID}}","Name":"{{.Names}}","Image":"{{.Image}}"}' | jq -s)
+    output = exec_ %(docker --context #{ctx} ps --format '{"ID":"{{.ID}}","Name":"{{.Names}}","Image":"{{.Image}}","Service":"{{.Label "com.docker.swarm.service.name"}}"}')
+    containers = output.lines.map { JSON _1 }
 
     ids = containers.map { _1['ID'] }
     $containers_cache.select! {|k,v| ids.include? k } # delete obsolete containers
@@ -46,17 +46,24 @@ module UpdateService
 
       otl_current_span { _1.add_event('inspect container', attributes: { event: 'Success', message: "C_Name: #{c['Name']}, C_ID:#{c['ID']}"}.transform_keys(&:to_s) ) }
 
-      $containers_cache[c['ID']] ||= JSON exec_ %(docker --context #{ctx} inspect #{c['ID']} | jq -r .[0] )
+      container = $containers_cache[c['ID']] ||= (JSON exec_ %(docker --context #{ctx} inspect #{c['ID']})).first
+      raise "Container metadata unavailable for #{c['ID']}" unless container
 
-      if $containers_cache[c['ID']]
-        $containers_cache[c['ID']][:ImageRepoDigests] ||= begin
-          image = JSON exec_ %(docker --context #{ctx} image inspect #{$containers_cache[c['ID']]['Image']} | jq -r .[0])
-          image['RepoDigests'].map { _1[/sha256:.{64}/] }
-        end
+      container[:ImageRepoDigests] ||= begin
+        image = (JSON exec_ %(docker --context #{ctx} image inspect #{container['Image']})).first
+        digests = Array(image && image['RepoDigests']).filter_map { _1[/sha256:[a-f0-9]{64}$/] }
+        raise "Image digests unavailable for #{container['Image']}" if digests.empty?
+
+        digests
       end
+    rescue => e
+      LOGGER.warn "Container inspection failed for #{ctx}: #{c['Name']} (#{c['ID']}): #{e.message}"
     end
     LOGGER.info "List containers done: containers: #{containers.size}, $containers_cache: #{$containers_cache.size}"
-    $containers_cache
+    containers.to_h do |c|
+      container = $containers_cache[c['ID']] || { 'Name' => "/#{c['Name']}" }
+      [c['ID'], container.merge(ServiceName: c['Service'])]
+    end
   end
 
   async otl_def def service_image_digest(ctx, service_name)
@@ -128,14 +135,19 @@ module UpdateService
             services.map_async do |name, service_image|
               LOGGER.info "Update #{c_name}: #{name}, image: #{service_image}"
 
-              c_list = containers.values.select { _1['Name'] =~ /^\/#{name}/ }
-              c_digests = c_list.map { _1[:ImageRepoDigests] }.flatten
-
+              c_list = containers.values.select { _1[:ServiceName] == name }
               if update_image
                 next "Skipping(update_image) #{c_name}: #{service_image}" unless service_image =~ /#{update_image}/
               else
                 next "Skipping: #{service_image}" unless service_image =~ IMAGE_FILTER
               end
+              if c_list.empty? || c_list.any? { _1[:ImageRepoDigests].to_a.empty? }
+                message = "Skipping #{c_name}: #{name}: image digests unavailable"
+                LOGGER.warn message
+                next message
+              end
+              c_digests = c_list.flat_map { _1[:ImageRepoDigests] }
+
               # task_names = list_service_tasks(ctx, name).wait
               # task_names.each do |task_name|
               #   digest = get_task_image_digest(ctx, task_name).wait
@@ -148,7 +160,7 @@ module UpdateService
 
               LOGGER.info "Latest digest: #{latest_digest}"
 
-              if c_digests.empty? || c_digests.include?(latest_digest)
+              if c_digests.include?(latest_digest)
                 LOGGER.info "No update required for #{c_name}: #{name} #{service_image} on #{_host}: digest #{c_digests}"
                 "No update required for #{c_name}: #{name} #{service_image} on #{_host}: digest #{c_digests}"
               else
